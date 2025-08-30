@@ -1,55 +1,40 @@
+// server.js
 import express from "express";
 import cors from "cors";
-import bodyParser from "body-parser";
-import OpenAI from "openai";
 
 const app = express();
-const port = process.env.PORT || 10000;
+const PORT = process.env.PORT || 10000;
 
 // Middleware
 app.use(cors());
-app.use(bodyParser.json());
+app.use(express.json());
 
-// OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+// Main NPC route
+app.post("/ask", (req, res) => {
+  const userMessage = req.body.message;
 
-// Health check
-app.get("/", (req, res) => {
-  res.send("NPC AI server is running!");
-});
+  console.log("[NPC Server] Received message:", userMessage);
 
-// Endpoint for Roblox to send messages
-app.post("/chat", async (req, res) => {
-  try {
-    const { message } = req.body;
-    if (!message) return res.status(400).json({ error: "No message provided" });
+  // Simple NPC reply logic
+  let reply = "I didn't get that.";
 
-    console.log("[NPC AI] Received message:", message);
-
-    // Call OpenAI Chat API
-    const response = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [
-        { role: "system", content: "You are a friendly NPC in Roblox." },
-        { role: "user", content: message }
-      ]
-    });
-
-    const reply = response.choices[0].message.content;
-    console.log("[NPC AI] Reply:", reply);
-
-    res.json({ reply });
-  } catch (err) {
-    console.error("Error handling AI request:", err);
-    res.status(500).json({ error: "AI request failed" });
+  if (userMessage) {
+    // Example basic responses
+    if (userMessage.toLowerCase() === "hi") {
+      reply = "Hello, I am your NPC!";
+    } else if (userMessage.toLowerCase() === "how are you?") {
+      reply = "I am doing great!";
+    } else if (userMessage.toLowerCase() === "tell me a joke") {
+      reply = "Why did the Robloxian cross the road? To get to the other server!";
+    } else {
+      reply = "You said: " + userMessage;
+    }
   }
+
+  res.json({ reply });
 });
 
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+// Start server
+app.listen(PORT, () => {
+  console.log(`NPC server running on port ${PORT}`);
 });
-
-
-
