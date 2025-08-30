@@ -1,43 +1,45 @@
-// server.js
-const express = require("express");
-const cors = require("cors");
-const { Configuration, OpenAIApi } = require("openai");
+import express from "express";
+import cors from "cors";
+import OpenAI from "openai";
+
+// Make sure you set your OpenAI API key in Render env variables
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
 
 const app = express();
+const PORT = process.env.PORT || 3000;
+
 app.use(cors());
 app.use(express.json());
 
-// Make sure to set OPENAI_API_KEY in Render environment variables
-const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-const openai = new OpenAIApi(configuration);
-
-// Test route
+// Health check
 app.get("/", (req, res) => {
-  res.send("NPC AI server is running!");
+  res.send("AI NPC server is running!");
 });
 
-// Chat route for Roblox
+// Main chat endpoint
 app.post("/chat", async (req, res) => {
   try {
     const prompt = req.body.prompt;
-    if (!prompt) return res.status(400).json({ error: "No prompt provided" });
+    if (!prompt) return res.json({ response: "No prompt provided." });
 
-    const completion = await openai.createChatCompletion({
-      model: "gpt-4",
-      messages: [{ role: "user", content: prompt }],
-      max_tokens: 100,
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: prompt }]
     });
 
-    const aiResponse = completion.data.choices[0].message.content.trim();
-    res.json({ response: aiResponse });
-  } catch (error) {
-    console.error("Error in /chat:", error.response ? error.response.data : error.message);
-    res.status(500).json({ error: "AI server error" });
+    const answer = completion.choices[0].message.content;
+    res.json({ response: answer });
+
+  } catch (err) {
+    console.error("Error handling AI request:", err);
+    res.status(500).json({ response: "Server error" });
   }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
 
