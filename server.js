@@ -1,26 +1,43 @@
+// server.js
 const express = require("express");
 const cors = require("cors");
-const { OpenAI } = require("openai");
+const { Configuration, OpenAIApi } = require("openai");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const client = new OpenAI({
+// Make sure to set OPENAI_API_KEY in Render environment variables
+const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY,
 });
+const openai = new OpenAIApi(configuration);
 
+// Test route
+app.get("/", (req, res) => {
+  res.send("NPC AI server is running!");
+});
+
+// Chat route for Roblox
 app.post("/chat", async (req, res) => {
   try {
-    const response = await client.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [{ role: "user", content: req.body.message }],
+    const prompt = req.body.prompt;
+    if (!prompt) return res.status(400).json({ error: "No prompt provided" });
+
+    const completion = await openai.createChatCompletion({
+      model: "gpt-4",
+      messages: [{ role: "user", content: prompt }],
+      max_tokens: 100,
     });
 
-    res.json({ reply: response.choices[0].message.content });
-  } catch (err) {
-    res.status(500).json({ error: "error" });
+    const aiResponse = completion.data.choices[0].message.content.trim();
+    res.json({ response: aiResponse });
+  } catch (error) {
+    console.error("Error in /chat:", error.response ? error.response.data : error.message);
+    res.status(500).json({ error: "AI server error" });
   }
 });
 
-app.listen(3000, () => console.log("server running"));
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
